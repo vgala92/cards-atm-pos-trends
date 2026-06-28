@@ -52,7 +52,7 @@ def _parse_old(rows):
         c1=r[1] if len(r)>1 else None; c2=r[2] if len(r)>2 else None
         if c1 is None: continue
         s1=str(c1).strip()
-        if s1.lower()=="total":
+        if s1.lower()=="total" or (c2 is not None and str(c2).strip().lower()=="total"):
             total=_old_row(r); continue
         if c2 is None or str(c2).strip()=="":
             g=GROUPS.get(s1.lower())
