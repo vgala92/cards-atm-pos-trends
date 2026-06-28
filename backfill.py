@@ -27,7 +27,7 @@ def _parse_new(rows):
         c1=r[1] if len(r)>1 else None; c2=r[2] if len(r)>2 else None
         if c1 is None and c2 is None: continue
         s1=str(c1).strip() if c1 is not None else ""
-        if s1.lower()=="total" and (c2 is None or str(c2).strip()==""):
+        if s1.lower()=="total" or (c2 is not None and str(c2).strip().lower()=="total"):
             total=[round(_num(r[c]),3) if c<len(r) else 0 for c in range(3,29)]; continue
         if c2 is None or str(c2).strip()=="":
             g=GROUPS.get(s1.lower())
