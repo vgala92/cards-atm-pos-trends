@@ -1,0 +1,57 @@
+name: Backfill ATM history (one-off)
+
+# Run this MANUALLY (Actions tab -> Backfill ATM history -> Run workflow) to pull older
+# months from RBI's archive into the dashboard. It only ingests files matching the current
+# column layout and skips/logs older-format months (so it can't load misaligned data).
+# After running once, the daily "Update RBI ATM dashboard" workflow keeps things current.
+on:
+  workflow_dispatch:
+    inputs:
+      start_year:
+        description: "Earliest year to ingest (older-format months are skipped & logged)"
+        default: "2017"
+      start_atmid:
+        description: "Lowest atmid to scan (May 2026 = 183; Jan 2017 is ~71)"
+        default: "40"
+      end_atmid:
+        description: "Highest atmid to scan"
+        default: "190"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rbi-atm-update
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+      - name: Backfill history
+        env:
+          START_YEAR: ${{ github.event.inputs.start_year }}
+          START_ATMID: ${{ github.event.inputs.start_atmid }}
+          END_ATMID: ${{ github.event.inputs.end_atmid }}
+        run: python backfill.py
+      - name: Publish the backfilled dashboard
+        run: |
+          git config user.name  "rbi-atm-bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain index.html)" ]; then
+            git add index.html
+            git commit -m "Backfill ATM/POS/Card history ($(date -u +'%Y-%m-%d %H:%M UTC'))"
+            git push
+            echo "Backfill published."
+          else
+            echo "No additional compatible months found — nothing to publish."
+          fi
