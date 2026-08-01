@@ -38,13 +38,54 @@ GROUPS={"public sector banks":"Public Sector","private sector banks":"Private Se
 # variants to one name so a bank never splits into two rows on the dashboard.
 _BANK_ALIAS={"CITY UNION BANK":"CITY UNION BANK LTD","IDBI LTD":"IDBI BANK LTD",
              "JAMMU AND KASHMIR BANK":"JAMMU AND KASHMIR BANK LTD","SBM BANK INDIA":"SBM BANK INDIA LTD",
-             "BANDHAN BANK":"BANDHAN BANK LTD"}
+             "BANDHAN BANK":"BANDHAN BANK LTD",
+             # rebrands / spelling changes — same bank across eras (clean handoff, no overlap)
+             "DHANALAKSHMI BANK LTD":"DHANALAXMI BANK LTD",
+             "DBS BANK":"DBS INDIA BANK LTD",
+             "CATHOLIC SYRIAN BANK LTD":"CSB BANK LTD",
+             "IDFC BANK LTD":"IDFC FIRST BANK LTD",
+             "RATNAKAR BANK LTD":"RBL BANK LTD",
+             "DEVELOPMENT CREDIT BANK":"DCB BANK LTD",
+             "HONGKONG AND SHANGHAI BKG CORPN":"HSBC LTD",
+             "AMERICAN EXPRESS":"AMERICAN EXPRESS BANKING CORPORATION",
+             "NORTH EAST SMALL FINANCE BANK LTD":"SLICE SMALL FINANCE BANK LTD"}
 def canon_bank(name):
     s=re.sub(r"\s+"," ",str(name).strip())
     u=re.sub(r"\.","",s.upper())
     u=re.sub(r"\bLIMITED\b","LTD",u)
     u=re.sub(r"\s+"," ",u).strip()
     return _BANK_ALIAS.get(u,u)
+
+# Bank AMALGAMATIONS — an absorbed bank's data is folded (summed) into its acquirer so the
+# surviving bank shows one continuous, pro-forma-combined series and the old names disappear.
+# (Keys/values are canonical names.) Distinct from rebrands in _BANK_ALIAS (those are 1:1 renames.)
+MERGE_INTO={
+ # SBI associates -> SBI (Apr 2017)
+ "STATE BANK OF BIKANER AND JAIPUR":"STATE BANK OF INDIA","STATE BANK OF HYDERABAD":"STATE BANK OF INDIA",
+ "STATE BANK OF MYSORE":"STATE BANK OF INDIA","STATE BANK OF PATIALA":"STATE BANK OF INDIA",
+ "STATE BANK OF TRAVANCORE":"STATE BANK OF INDIA","BHARATIYA MAHILA BANK":"STATE BANK OF INDIA",
+ # Vijaya + Dena -> Bank of Baroda (Apr 2019)
+ "VIJAYA BANK":"BANK OF BARODA","DENA BANK":"BANK OF BARODA",
+ # Apr 2020 four-way PSB consolidation
+ "ORIENTAL BANK OF COMMERCE":"PUNJAB NATIONAL BANK","UNITED BANK OF INDIA":"PUNJAB NATIONAL BANK",
+ "SYNDICATE BANK":"CANARA BANK",
+ "ANDHRA BANK":"UNION BANK OF INDIA","CORPORATION BANK":"UNION BANK OF INDIA",
+ "ALLAHABAD BANK":"INDIAN BANK",
+ # other amalgamations
+ "THE LAXMI VILAS BANK LTD":"DBS INDIA BANK LTD",          # Nov 2020
+ "FINCARE SMALL FINANCE BANK LTD":"AU SMALL FINANCE BANK LTD",  # Apr 2024
+}
+def apply_mergers(months, groups):
+    """Fold each absorbed bank's monthly row into its acquirer (element-wise sum); drop the old name."""
+    for md in months.values():
+        rows=md.get("rows",{})
+        for tgt,acq in MERGE_INTO.items():
+            if tgt in rows:
+                tv=rows.pop(tgt)
+                if acq in rows: rows[acq]=[round(a+b,3) for a,b in zip(rows[acq],tv)]
+                else:           rows[acq]=tv
+    for tgt in MERGE_INTO: groups.pop(tgt,None)
+    return months, groups
 
 
 # ---------------------------------------------------------------- fetch
@@ -200,6 +241,7 @@ def main():
     before = json.dumps({"months":months,"monthOrder":sorted(months,key=month_sort_key)}, separators=(",",":"))
     months.update(parsed)
     allgroups.update(groups)
+    apply_mergers(months, allgroups)   # fold amalgamated banks into their acquirers
     order = sorted(months.keys(), key=month_sort_key)
     after = json.dumps({"months":months,"monthOrder":order}, separators=(",",":"))
 

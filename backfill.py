@@ -15,7 +15,17 @@ GROUPS={"public sector banks":"Public Sector","private sector banks":"Private Se
 
 _BANK_ALIAS={"CITY UNION BANK":"CITY UNION BANK LTD","IDBI LTD":"IDBI BANK LTD",
              "JAMMU AND KASHMIR BANK":"JAMMU AND KASHMIR BANK LTD","SBM BANK INDIA":"SBM BANK INDIA LTD",
-             "BANDHAN BANK":"BANDHAN BANK LTD"}
+             "BANDHAN BANK":"BANDHAN BANK LTD",
+             # rebrands / spelling changes — same bank across eras (clean handoff, no overlap)
+             "DHANALAKSHMI BANK LTD":"DHANALAXMI BANK LTD",
+             "DBS BANK":"DBS INDIA BANK LTD",
+             "CATHOLIC SYRIAN BANK LTD":"CSB BANK LTD",
+             "IDFC BANK LTD":"IDFC FIRST BANK LTD",
+             "RATNAKAR BANK LTD":"RBL BANK LTD",
+             "DEVELOPMENT CREDIT BANK":"DCB BANK LTD",
+             "HONGKONG AND SHANGHAI BKG CORPN":"HSBC LTD",
+             "AMERICAN EXPRESS":"AMERICAN EXPRESS BANKING CORPORATION",
+             "NORTH EAST SMALL FINANCE BANK LTD":"SLICE SMALL FINANCE BANK LTD"}
 def canon_bank(name):
     s=re.sub(r"\s+"," ",str(name).strip())
     u=re.sub(r"\.","",s.upper())
@@ -217,6 +227,7 @@ def main():
             months[mk]=md; groups.update(g); added+=1
         except Exception as e:
             print("  parse error:", e)
+    B.apply_mergers(months, groups)   # fold amalgamated banks into their acquirers
     order=sorted(months, key=B.month_sort_key)
     payload={"version":1,"exportedAt":datetime.datetime.utcnow().isoformat()+"Z",
              "source":"RBI Bankwise ATM/POS/Card Statistics","schema":cur.get("schema",B.SCHEMA),
