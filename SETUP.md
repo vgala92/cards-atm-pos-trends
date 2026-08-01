@@ -18,6 +18,14 @@ bank group / individual bank) driving five tabs:
 - **Compare** — compare several months *or* several banks side by side (% vs a baseline).
 - **YoY Growth** — year-on-year growth with a **Month + As-of-year picker**: YoY % over time, the
   chosen month across all years, multi-year **CAGR**, and a "top banks by YoY growth" leaderboard.
+- **Geography · State** and **Geography · District** — a separate **quarterly** RBI dataset (ATM
+  *deployment* by location, incl. White Label ATM Operators, co-ops and RRBs — so totals are higher
+  than the monthly bank-only count). Pick a **Quarter**; State tab filters by bank/group and shows
+  ATMs per state/UT + the Metro/Urban/Semi-Urban/Rural mix; District tab drills into any state's
+  districts. Source: RBI *State Wise and Region Wise Deployment of ATMs*.
+- **Geography · Map** — an interactive India choropleth of the same quarterly data: states shaded by
+  ATM count (darker = more) for the chosen quarter/scope; hover for exact figures, click a state to
+  jump to its districts.
 
 Every theme tab also has a stacked-by-group trend, a **market-composition donut**, a **bank
 leaderboard** (with a minimum-size filter), and **Top gainers / decliners** tiles — all of which
@@ -36,6 +44,7 @@ phone home screen.
 |------|---------|
 | `index.html` | The dashboard your team opens (data is baked in). |
 | `build_dashboard.py` | Daily job: scrape the RBI ATM page → download new/revised months → rebuild. |
+| `quarterly_build.py` | Daily job: scrape RBI's *State/Region-wise ATM deployment* page → add each new quarter to the Geography tabs. |
 | `backfill.py` | One-off: pull historical months from RBI's archive (era-aware; handles the pre-2022 layout). |
 | `requirements.txt` | Tools the scripts need. |
 | `.github/workflows/update.yml` | The daily schedule + failure email. |
