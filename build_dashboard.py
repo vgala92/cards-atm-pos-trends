@@ -33,6 +33,19 @@ GROUPS={"public sector banks":"Public Sector","private sector banks":"Private Se
         "foreign banks":"Foreign","payment banks":"Payments","payments banks":"Payments",
         "small finance banks":"Small Finance"}
 
+# Canonical bank names — RBI spells the same bank differently across eras
+# ("LTD" vs "LIMITED", punctuation/casing, "BANK" present or not). Collapse all
+# variants to one name so a bank never splits into two rows on the dashboard.
+_BANK_ALIAS={"CITY UNION BANK":"CITY UNION BANK LTD","IDBI LTD":"IDBI BANK LTD",
+             "JAMMU AND KASHMIR BANK":"JAMMU AND KASHMIR BANK LTD","SBM BANK INDIA":"SBM BANK INDIA LTD",
+             "BANDHAN BANK":"BANDHAN BANK LTD"}
+def canon_bank(name):
+    s=re.sub(r"\s+"," ",str(name).strip())
+    u=re.sub(r"\.","",s.upper())
+    u=re.sub(r"\bLIMITED\b","LTD",u)
+    u=re.sub(r"\s+"," ",u).strip()
+    return _BANK_ALIAS.get(u,u)
+
 
 # ---------------------------------------------------------------- fetch
 def _is_xlsx(b): return bool(b) and b[:2] == b'PK'
@@ -121,6 +134,7 @@ def parse_bytes(b):
             continue
         name=str(c2).strip()
         if not name or name.lower()=="bank name": continue
+        name=canon_bank(name)
         banks[name]=[round(_num(r[c]),3) if c<len(r) else 0 for c in range(3,29)]
         groups[name]=cur or "Other"
     if not banks: return None
